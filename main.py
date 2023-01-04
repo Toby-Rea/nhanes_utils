@@ -47,7 +47,7 @@ def scrape_datasets() -> pd.DataFrame:
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 \
     (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"}
 
-    df = pd.DataFrame(columns=["years", "component", "docs_url", "data_url"])
+    df = pd.DataFrame(columns=["years", "component", "description", "docs_url", "data_url"])
     base = "https://wwwn.cdc.gov"
     for component in COMPONENTS:
         new_url = URL + component
@@ -64,13 +64,14 @@ def scrape_datasets() -> pd.DataFrame:
                 continue
 
             years = node.css_first("td:nth-child(1)").text().strip()
+            description = node.css_first("td:nth-child(2)").text().strip()
             docs_url = base + node.css_first("td:nth-child(3) > a").attributes["href"].strip()
             data_url = base + node.css_first("td:nth-child(4) > a").attributes["href"].strip()
 
             if not data_url.lower().endswith(".xpt"):
                 continue
 
-            df.loc[len(df.index)] = [years, component, docs_url, data_url]
+            df.loc[len(df.index)] = [years, component, description, docs_url, data_url]
 
     return df
 
