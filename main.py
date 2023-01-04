@@ -50,6 +50,7 @@ def scrape_datasets() -> pd.DataFrame:
     df = pd.DataFrame(columns=["years", "component", "description", "docs_url", "data_url"])
     base = "https://wwwn.cdc.gov"
     for component in COMPONENTS:
+        print(f"[scraping] {component}")
         new_url = URL + component
         response = requests.get(new_url, headers=headers)
         tree = HTMLParser(response.text)
@@ -82,10 +83,10 @@ def download(url: str) -> None:
     file_name = url.split("/")[-1]
     file_path = Path(DATA_DIRECTORY) / file_name
     if file_path.exists():
-        print(f"Skipping {file_name} ... File already exists.")
+        print(f"[skipping] {file_name} - file already exists")
         return
 
-    print(f"Downloading {file_name} ...")
+    print(f"[downloading] {file_name} from \"{url}\"")
     response = requests.get(url)
     with open(file_path, "wb") as file:
         file.write(response.content)
