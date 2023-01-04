@@ -9,14 +9,13 @@ See `requirements.txt` for `pip freeze` list.
 - `requests`
 - `selectolax`
 - `pandas`
-- `tqdm`
 
 ## Example Usage
 
 ```python
 def main() -> None:
     # Leave blank for all known components over all known years
-    # documentation is excluded by default
+    # (documentation is excluded by default)
     download_nhanes()
 
     # Provide parameters to be more specific
