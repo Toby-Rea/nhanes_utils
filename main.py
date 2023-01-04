@@ -76,7 +76,7 @@ def scrape_datasets() -> pd.DataFrame:
     return df
 
 
-def download_file(url: str) -> None:
+def download(url: str) -> None:
     """ Downloads a file from a url, if it doesn't already exist. """
 
     file_name = url.split("/")[-1]
@@ -114,9 +114,8 @@ def download_nhanes(components: list[str] | None = None,
 
     # Filter and download
     df = df[(df["years"].isin(years)) & (df["component"].isin(components))]
-    [download_file(data) for data in df["data_url"]]
-    if include_docs:
-        [download_file(doc) for doc in df["docs_url"]]
+    [download(url) for url in df["data_url"]]
+    [download(url) for url in df["docs_url"] if include_docs]
 
 
 def main() -> None:
