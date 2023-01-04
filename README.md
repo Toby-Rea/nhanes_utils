@@ -4,11 +4,11 @@ Provides a set of useful utilities for accessing and manipulating NHANES data.
 
 ## Requirements
 
-See `requirements.txt` for `pip freeze` list.
+- [requests](https://pypi.org/project/requests/)
+- [selectolax](https://pypi.org/project/selectolax/)
+- [pandas](https://pypi.org/project/pandas/)
 
-- `requests`
-- `selectolax`
-- `pandas`
+Note: See `requirements.txt` for output of `pip freeze`.
 
 ## Example Usage
 

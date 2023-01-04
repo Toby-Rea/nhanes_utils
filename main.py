@@ -119,9 +119,10 @@ def download_nhanes(components: list[str] | None = None,
 
 
 def main() -> None:
-    # Default behaviour is to download all components over all years
-    # excluding documentation. You can override this behaviour by
-    # passing options here
+    # Default behaviour is to download all known components over all known
+    # years, excluding documentation.
+    #
+    # You can override this behaviour by passing options here
     download_nhanes(
         components=["Laboratory"],
         years=["2013-2014"],
