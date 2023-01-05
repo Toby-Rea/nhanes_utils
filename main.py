@@ -94,7 +94,8 @@ def download(url: str) -> None:
 
 def download_nhanes(components: list[str] | None = None,
                     years: list[str] | None = None,
-                    include_docs: bool = False) -> None:
+                    include_docs: bool = False,
+                    destination: str | None = None) -> None:
     """ Downloads datasets and optionally documentation from NHANES. """
 
     if not Path(DATA_DIRECTORY).is_dir():
@@ -104,6 +105,10 @@ def download_nhanes(components: list[str] | None = None,
         components = COMPONENTS
     if years is None:
         years = YEARS
+    if destination is None:
+        destination = DATA_DIRECTORY
+
+    Path(destination).mkdir(parents=True, exist_ok=True)
 
     # Create the available nhanes dataset if it doesn't exist
     if not Path("nhanes_datasets.csv").is_file():
