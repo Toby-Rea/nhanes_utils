@@ -98,9 +98,6 @@ def download_nhanes(components: list[str] | None = None,
                     destination: str | None = None) -> None:
     """ Downloads datasets and optionally documentation from NHANES. """
 
-    if not Path(DATA_DIRECTORY).is_dir():
-        Path.mkdir(destination)
-
     if components is None:
         components = COMPONENTS
     if years is None:
