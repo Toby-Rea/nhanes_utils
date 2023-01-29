@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "nhanes-utils"
+version = "0.1.0"
+description = "Utilities for working with NHANES data"
+authors = ["Toby Rea"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "nhanes_utils"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.28.2"
+pandas = "^1.5.3"
+selectolax = "^0.3.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
