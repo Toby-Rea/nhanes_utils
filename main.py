@@ -8,14 +8,18 @@ Toby Rea
 01-01-2023
 """
 
-
-import requests
-from selectolax.parser import HTMLParser
-import pandas as pd
+import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import pandas as pd
+import pyreadstat
+import requests
+from selectolax.parser import HTMLParser
 
 URL = "https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component="
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 \
+            (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"}
 DATA_DIRECTORY = "data"
 COMPONENTS = [
     "Demographics",
@@ -41,20 +45,37 @@ YEARS = [
 ]
 
 
-def scrape_datasets() -> pd.DataFrame:
-    """ Scrapes all publicly available NHANES datasets. """
+class Scraper:
+    def __init__(self):
+        self.datasets = pd.DataFrame(columns=["years", "component", "description", "docs_url", "data_url"])
 
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 \
-    (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"}
+    def get_datasets(self) -> pd.DataFrame:
+        """ Returns a dataframe of all publicly available NHANES datasets. """
 
-    df = pd.DataFrame(
-        columns=["years", "component", "description", "docs_url", "data_url"]
-    )
-    base = "https://wwwn.cdc.gov"
-    for component in COMPONENTS:
-        print(f"[scraping] {component}")
+        if not Path("nhanes_datasets.csv").is_file():
+            print("Available datasets unknown - Scraping NHANES...")
+            return self.scrape_datasets()
+
+        return pd.read_csv("nhanes_datasets.csv")
+
+    def scrape_datasets(self) -> pd.DataFrame:
+        """ Scrapes all publicly available NHANES datasets. """
+
+        with ThreadPoolExecutor() as executor:
+            executor.map(self.scrape_component, COMPONENTS)
+
+        # Write the dataframe to a csv file for future use
+        self.datasets.to_csv("nhanes_datasets.csv", index=False)
+
+        return self.datasets
+
+    def scrape_component(self, component: str) -> None:
+        """ Scrapes the available datasets for a given component. """
+
+        print(f"Scraping {component} datasets...")
+        base = "https://wwwn.cdc.gov"
         new_url = URL + component
-        response = requests.get(new_url, headers=headers)
+        response = requests.get(new_url, headers=HEADERS)
         tree = HTMLParser(response.text)
         selector = "table > tbody > tr"
 
@@ -76,21 +97,17 @@ def scrape_datasets() -> pd.DataFrame:
             if not data_url.lower().endswith(".xpt"):
                 continue
 
-            df.loc[len(df)] = [years, component, description, doc_url, data_url]
-
-    return df
+            self.datasets.loc[len(self.datasets)] = [years, component, description, doc_url, data_url]
 
 
 def download(url: str) -> None:
-    """ Downloads a file from a url, if it doesn't already exist. """
+    """ Downloads a file from a given url, if it doesn't already exist. """
 
     file_name = url.split("/")[-1]
     file_path = Path(DATA_DIRECTORY) / file_name
     if file_path.exists():
-        print(f"[skipping] {file_name} - file already exists")
         return
 
-    print(f"[downloading] {file_name} from \"{url}\"")
     response = requests.get(url)
     with open(file_path, "wb") as file:
         file.write(response.content)
@@ -111,30 +128,54 @@ def download_nhanes(components: list[str] | None = None,
 
     Path(destination).mkdir(parents=True, exist_ok=True)
 
-    # Create the available nhanes dataset if it doesn't exist
-    if not Path("nhanes_datasets.csv").is_file():
-        print("Available datasets unknown - Scraping NHANES...")
-        df = scrape_datasets()
-        df.to_csv("nhanes_datasets.csv", index=False)
+    scraper = Scraper()
+    datasets = scraper.get_datasets()
 
-    df = pd.read_csv("nhanes_datasets.csv")
+    # Filter to selection and download the datasets, and the documentation if specified
+    filtered_datasets = datasets[(datasets["years"].isin(years)) & (datasets["component"].isin(components))]
+    with ThreadPoolExecutor() as executor:
+        print("Downloading data files...")
+        executor.map(download, filtered_datasets["data_url"])
+        if include_docs:
+            print("Downloading documentation files...")
+            executor.map(download, filtered_datasets["docs_url"])
 
-    # Filter and download
-    df = df[(df["years"].isin(years)) & (df["component"].isin(components))]
-    [download(url) for url in df["data_url"]]
-    [download(url) for url in df["docs_url"] if include_docs]
+    print("Downloading complete!")
+
+
+def convert_xpt_to_csv(xpt_path: Path) -> None:
+    """ Converts an XPT file to CSV, removing the original XPT file. """
+
+    df, _ = pyreadstat.read_xport(xpt_path)
+    df.to_csv(xpt_path.with_suffix(".csv"), index=False)
+
+    # Remove the original XPT file
+    os.remove(xpt_path)
+
+
+def convert_datasets() -> None:
+    """ Converts all XPT files in the data directory to CSV. """
+
+    print("Converting XPT files to CSV...")
+    xpt_files = [file for file in Path(DATA_DIRECTORY).iterdir() if file.suffix.lower() == ".xpt"]
+    with ThreadPoolExecutor() as executor:
+        executor.map(convert_xpt_to_csv, xpt_files)
 
 
 def main() -> None:
     # Default behaviour is to download all known components over all known
     # years, excluding documentation.
     #
-    # You can override this behaviour by passing options here
+    # You can override this behaviour by passing specific options here
+    # For example, to download only the Laboratory datasets for 2017-2018, including documentation:
     download_nhanes(
         components=["Laboratory"],
-        years=["2013-2014"],
+        years=["2017-2018"],
         include_docs=True
     )
+
+    # Optionally, convert all the XPT files to CSV, a human-readable format
+    convert_datasets()
 
 
 if __name__ == "__main__":
