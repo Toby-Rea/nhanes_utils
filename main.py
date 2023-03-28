@@ -53,7 +53,7 @@ class Scraper:
         """ Returns a dataframe of all publicly available NHANES datasets. """
 
         if not Path("nhanes_datasets.csv").is_file():
-            print("Available datasets unknown - Scraping NHANES...")
+            print("Available datasets unknown...")
             return self.scrape_datasets()
 
         return pd.read_csv("nhanes_datasets.csv")
@@ -61,18 +61,19 @@ class Scraper:
     def scrape_datasets(self) -> pd.DataFrame:
         """ Scrapes all publicly available NHANES datasets. """
 
+        print("Scraping NHANES for available datasets...")
         with ThreadPoolExecutor() as executor:
             executor.map(self.scrape_component, COMPONENTS)
 
         # Write the dataframe to a csv file for future use
         self.datasets.to_csv("nhanes_datasets.csv", index=False)
+        print("Scraping complete!")
 
         return self.datasets
 
     def scrape_component(self, component: str) -> None:
         """ Scrapes the available datasets for a given component. """
 
-        print(f"Scraping {component} datasets...")
         base = "https://wwwn.cdc.gov"
         new_url = URL + component
         response = requests.get(new_url, headers=HEADERS)
@@ -160,6 +161,7 @@ def convert_datasets() -> None:
     xpt_files = [file for file in Path(DATA_DIRECTORY).iterdir() if file.suffix.lower() == ".xpt"]
     with ThreadPoolExecutor() as executor:
         executor.map(convert_xpt_to_csv, xpt_files)
+    print("Conversion complete!")
 
 
 def main() -> None:
@@ -169,9 +171,9 @@ def main() -> None:
     # You can override this behaviour by passing specific options here
     # For example, to download only the Laboratory datasets for 2017-2018, including documentation:
     download_nhanes(
-        components=["Laboratory"],
+        components=["Examination"],
         years=["2017-2018"],
-        include_docs=True
+        include_docs=False
     )
 
     # Optionally, convert all the XPT files to CSV, a human-readable format
