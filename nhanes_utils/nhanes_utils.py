@@ -9,6 +9,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import pandas as pd
 import pyreadstat
 import requests
 
@@ -59,11 +60,11 @@ def download_nhanes(components: list[str] | None = None,
 
     print("Downloading datasets...")
     with ThreadPoolExecutor() as executor:
-        executor.map(download, filtered_datasets["data_url"], [destination]*len(filtered_datasets["data_url"]))
+        executor.map(download, filtered_datasets["data_url"], [destination] * len(filtered_datasets["data_url"]))
 
         if include_docs:
             print("Downloading documentation files...")
-            executor.map(download, filtered_datasets["docs_url"], [destination]*len(filtered_datasets["data_url"]))
+            executor.map(download, filtered_datasets["docs_url"], [destination] * len(filtered_datasets["data_url"]))
 
     print("Downloading complete!")
 
@@ -93,3 +94,10 @@ def convert_datasets(data_directory: str | None = None) -> None:
     with ThreadPoolExecutor() as executor:
         executor.map(convert_xpt_to_csv, xpt_files)
     print("Conversion complete!")
+
+
+def get_available_datasets() -> pd.DataFrame:
+    """ Returns a pandas dataframe containing all available datasets. """
+
+    scraper = Scraper()
+    return scraper.get_datasets()
