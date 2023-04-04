@@ -1,25 +1,29 @@
-# nhanes-utils
+# nhanes_utils
 
 Provides a set of useful utilities for accessing and manipulating NHANES data.
-
-## Requirements
-
-You can use [poetry](https://python-poetry.org/) for simpler handling of project dependencies by running `poetry install`.
-
-- [requests](https://pypi.org/project/requests/)
-- [selectolax](https://pypi.org/project/selectolax/)
-- [pandas](https://pypi.org/project/pandas/)
 
 ## Example Usage
 
 ```python
+from nhanes_utils import download_nhanes, convert_datasets
+
+
 def main() -> None:
-    # Leave blank for all known components over all known years
-    # (documentation is excluded by default)
-    download_nhanes()
+    # Default behaviour is to download all known components over all known
+    # years, excluding documentation.
+    #
+    # You can override this behaviour by passing specific options here
+    # For example, to download only the Laboratory datasets for 2017-2018, including documentation:
+    download_nhanes(
+        components=["Laboratory"],
+        years=["2015-2016"],
+        include_docs=False
+    )
 
-    # Provide parameters to be more specific
-    download_nhanes(components=["Demographics"], years=["2013-2014"], include_docs=True)
+    # Optionally, convert all the XPT files to CSV, a human-readable format
+    convert_datasets()
+
+
+if __name__ == "__main__":
+    main()
 ```
-
-`poetry run python main.py`
