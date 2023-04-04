@@ -6,7 +6,7 @@ setup(
     description='A package that can be used to download and process data from the NHANES.',
     author='Toby Rea',
     author_email='toby.e.rea@protonmail.com',
-    url='https://github.com/toby-rea/nhanes-utils',
+    url='https://github.com/toby-rea/nhanes_utils',
     license='MIT',
     packages=find_packages(),
     install_requires=[
