@@ -15,5 +15,6 @@ setup(
         'pyreadstat',
         'requests',
         'selectolax',
+        'aiohttp',
     ],
 )

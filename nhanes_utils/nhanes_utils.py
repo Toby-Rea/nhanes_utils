@@ -11,27 +11,10 @@ from pathlib import Path
 
 import pandas as pd
 import pyreadstat
-import requests
 
 from nhanes_utils import config
 from nhanes_utils.scraper import Scraper
-
-
-def download(url: str, destination: str | None = None) -> None:
-    """ Downloads a file from a given url, if it doesn't already exist. """
-
-    if destination is None:
-        destination = config.DATA_DIRECTORY
-
-    file_name = url.split("/")[-1].lower()
-    xpt_file = Path(destination) / file_name
-    csv_file = Path(destination) / file_name.replace(".xpt", ".csv")
-    if xpt_file.exists() or csv_file.exists():
-        return
-
-    response = requests.get(url)
-    with open(xpt_file, "wb") as file:
-        file.write(response.content)
+from nhanes_utils.downloader import Downloader
 
 
 def download_nhanes(components: list[str] | None = None,
@@ -58,15 +41,14 @@ def download_nhanes(components: list[str] | None = None,
         print("No datasets found matching the specified criteria.")
         return
 
-    print("Downloading datasets...")
-    with ThreadPoolExecutor() as executor:
-        executor.map(download, filtered_datasets["data_url"], [destination] * len(filtered_datasets["data_url"]))
+    # Construct the list of urls to download
+    url_list: list[str] = filtered_datasets["data_url"].tolist()
+    if include_docs:
+        url_list.extend(filtered_datasets["docs_url"].tolist())
 
-        if include_docs:
-            print("Downloading documentation files...")
-            executor.map(download, filtered_datasets["docs_url"], [destination] * len(filtered_datasets["data_url"]))
-
-    print("Downloading complete!")
+    # Download all the files
+    downloader = Downloader(url_list, destination)
+    downloader.run()
 
 
 def convert_xpt_to_csv(xpt_path: Path) -> None:
