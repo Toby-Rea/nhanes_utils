@@ -13,11 +13,12 @@ import requests
 from selectolax.parser import HTMLParser
 
 from nhanes_utils import config
+from nhanes_utils.dataset import Dataset
 
 
 class Scraper:
     def __init__(self):
-        self.datasets = pd.DataFrame(columns=["years", "component", "description", "docs_url", "data_url"])
+        self.datasets = pd.DataFrame()
 
     def get_datasets(self) -> pd.DataFrame:
         """ Returns a dataframe of all publicly available NHANES datasets. """
@@ -50,6 +51,7 @@ class Scraper:
         tree = HTMLParser(response.text)
         selector = "table > tbody > tr"
 
+        datasets: list[Dataset] = []
         for node in tree.css(selector):
             if "limited_access" in node.html.lower():
                 continue
@@ -68,4 +70,8 @@ class Scraper:
             if not data_url.lower().endswith(".xpt"):
                 continue
 
-            self.datasets.loc[len(self.datasets)] = [years, component, description, doc_url, data_url]
+            dataset = Dataset(years, component, description, data_url, doc_url)
+            datasets.append(dataset)
+
+        # Create the dataframe
+        self.datasets = pd.DataFrame([vars(dataset) for dataset in datasets])
