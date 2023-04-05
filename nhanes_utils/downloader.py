@@ -19,20 +19,30 @@ class Downloader:
     async def download_file(self, url: str) -> None:
         """ Downloads a file from a given url, if it doesn't already exist. """
 
-        file_name = url.split("/")[-1].lower()
-        xpt_file = Path(self.destination) / file_name
-        csv_file = Path(self.destination) / file_name.replace(".xpt", ".csv")
-        if xpt_file.exists() or csv_file.exists():
-            print(f"{file_name} exists already!")
+        # Get the file name and extension from the url, and convert the file extension to lowercase.
+        file_name = url.split("/")[-1]
+        extension = file_name.split(".")[-1]
+        file_name = file_name.replace(extension, extension.lower())
+
+        # Ensure the file doesn't already exist.
+        exists: bool = False
+        path = Path(self.destination).joinpath(file_name)
+        match extension.lower():
+            case "xpt" | "csv":
+                exists = path.with_suffix(".xpt").exists() or path.with_suffix(".csv").exists()
+            case _:
+                exists = path.exists()
+
+        if exists:
             return
 
         async with aiohttp.ClientSession() as session, session.get(url) as response:
             if response.status == 200:
                 content = await response.read()
-                with open(xpt_file, "wb") as file:
+                with open(path, "wb") as file:
                     file.write(content)
             else:
-                print(f"Failed to download from {url}")
+                print(f"Failed to download from {url} (received response code {response.status}).")
 
     async def download(self) -> None:
         """ Downloads all files stored in the url list. """
