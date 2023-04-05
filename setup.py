@@ -16,5 +16,6 @@ setup(
         'requests',
         'selectolax',
         'aiohttp',
+        'aiofiles',
     ],
 )
