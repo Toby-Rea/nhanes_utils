@@ -7,7 +7,7 @@ Toby Rea
 
 import asyncio
 from pathlib import Path
-
+from nhanes_utils import config
 import aiofiles
 import aiohttp
 
@@ -34,7 +34,6 @@ class Downloader:
             file_name = file_name.replace(extension, extension.lower())
 
             # Ensure the file doesn't already exist.
-            exists = False
             path = Path(self.destination).joinpath(file_name)
             match extension.lower():
                 case "xpt" | "csv":
@@ -45,12 +44,20 @@ class Downloader:
             if exists:
                 return
 
-            async with aiohttp.ClientSession() as session, session.get(url) as response:
-                if response.status == 200:
-                    content = await response.read()
-                    await _write_file(path, content)
-                else:
-                    print(f"Failed to download from {url} (received response code {response.status}).")
+            for retry in range(config.MAX_RETRIES):
+                try:
+                    async with aiohttp.ClientSession(headers=config.HEADERS) as session, session.get(url) as response:
+                        if response.status == 200:
+                            content = await response.read()
+                            await _write_file(path, content)
+                            return
+                        else:
+                            print(f"Failed to download from {url} (received response code {response.status}).")
+                            return
+                except asyncio.TimeoutError:
+                    await asyncio.sleep(config.RETRY_TIMEOUT)
+            else:
+                print(f"Failed to download from {url} after {config.MAX_RETRIES} retries.")
 
     async def download(self) -> None:
         """ Downloads all files stored in the url list. """
