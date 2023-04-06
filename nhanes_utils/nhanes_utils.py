@@ -10,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pandas as pd
-import pyreadstat
 
 from nhanes_utils import config
 from nhanes_utils.scraper import Scraper
@@ -54,7 +53,8 @@ def download_nhanes(components: list[str] | None = None,
 def convert_xpt_to_csv(xpt_path: Path) -> None:
     """ Converts an XPT file to CSV, removing the original XPT file. """
 
-    df, _ = pyreadstat.read_xport(xpt_path)
+    print(f"Converting {xpt_path.name} to CSV...")
+    df = pd.read_sas(xpt_path)
     df.to_csv(xpt_path.with_suffix(".csv"), index=False)
 
     # Remove the original XPT file

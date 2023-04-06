@@ -12,7 +12,6 @@ setup(
     install_requires=[
         'numpy',
         'pandas',
-        'pyreadstat',
         'requests',
         'selectolax',
         'aiohttp',
