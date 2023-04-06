@@ -18,7 +18,7 @@ from nhanes_utils.dataset import Dataset
 
 class Scraper:
     def __init__(self):
-        self.datasets = pd.DataFrame()
+        self.datasets = pd.DataFrame(columns=["years", "component", "description", "data_url", "docs_url"])
 
     def get_datasets(self) -> pd.DataFrame:
         """ Returns a dataframe of all publicly available NHANES datasets. """
@@ -62,7 +62,7 @@ class Scraper:
 
             years = node.css_first("td:nth-child(1)").text().strip()
             description = node.css_first("td:nth-child(2)").text().strip()
-            doc_url = base + node.css_first("td:nth-child(3) > a") \
+            docs_url = base + node.css_first("td:nth-child(3) > a") \
                 .attributes["href"].strip()
             data_url = base + node.css_first("td:nth-child(4) > a") \
                 .attributes["href"].strip()
@@ -70,8 +70,9 @@ class Scraper:
             if not data_url.lower().endswith(".xpt"):
                 continue
 
-            dataset = Dataset(years, component, description, data_url, doc_url)
+            dataset = Dataset(years, component, description, data_url, docs_url)
             datasets.append(dataset)
 
-        # Create the dataframe
-        self.datasets = pd.DataFrame([vars(dataset) for dataset in datasets])
+        # Add these datasets to the dataframe
+        df = pd.DataFrame([dataset.__dict__ for dataset in datasets])
+        self.datasets = pd.concat([self.datasets, df], ignore_index=True)
