@@ -1,21 +1,10 @@
-"""
-Configuration file for global variables required by nhanes_utils modules.
-
-Toby Rea
-04-04-2023
-"""
-
-URL = "https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component="
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 \
-            (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"}
-DATA_DIRECTORY = "data"
-COMPONENTS = [
-    "Demographics",
-    "Dietary",
-    "Examination",
-    "Laboratory",
-    "Questionnaire"
-]
+CHUNK_SIZE = 32 * 1024 * 1024
+SCRAPER_BASE_URL = "https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component="
+COMPONENTS = ["Demographics", "Dietary", "Examination", "Laboratory", "Questionnaire"]
+MAX_CONCURRENT_DOWNLOADS = 5
+DOWNLOAD_RETRIES = 3
+DATASETS_CSV = "datasets.csv"
+DOWNLOAD_DIRECTORY = "datasets"
 YEARS = [
     "1999-2000",
     "1999-2004",
@@ -33,5 +22,3 @@ YEARS = [
     "2019-2020",
     "2021-2022"
 ]
-MAX_RETRIES = 3
-RETRY_TIMEOUT = 1.0

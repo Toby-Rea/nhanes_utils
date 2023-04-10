@@ -10,8 +10,8 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=[
-        'numpy',
         'pandas',
+        'polars',
         'requests',
         'selectolax',
         'aiohttp',

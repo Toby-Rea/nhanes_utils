@@ -1,78 +1,73 @@
-"""
-Provides utilities for scraping the NHANES website for available datasets.
-
-Toby Rea
-04-04-2023
-"""
-
+import os
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
+from typing import List
 
-import pandas as pd
+import polars as pl
 import requests
-from selectolax.parser import HTMLParser
+from selectolax.lexbor import LexborHTMLParser
 
-from nhanes_utils import config
+from nhanes_utils.config import COMPONENTS, SCRAPER_BASE_URL, DATASETS_CSV
 from nhanes_utils.dataset import Dataset
 
 
 class Scraper:
+    """
+    A class for scraping NHANES datasets from the CDC website. Provides methods for scraping
+    datasets for each component and getting all datasets. Datasets are parsed into a DataFrame using
+    Polars and can be saved to a local file for future use.
+    """
+
     def __init__(self):
-        self.datasets = pd.DataFrame(columns=["years", "component", "description", "data_url", "docs_url"])
+        self.datasets: List[Dataset] = list()
 
-    def get_datasets(self) -> pd.DataFrame:
-        """ Returns a dataframe of all publicly available NHANES datasets. """
+    def parse_row(self, td_list: List, component: str) -> None:
+        """ Parse a dataset from the row, adding it the list of datasets. """
 
-        if not Path("nhanes_datasets.csv").is_file():
-            print("Available datasets unknown...")
-            return self.scrape_datasets()
+        base_url = "https://wwwn.cdc.gov"
+        docs_anchor = td_list[2].css_first("a")
+        data_anchor = td_list[3].css_first("a")
 
-        return pd.read_csv("nhanes_datasets.csv")
+        # Ensure the dataset has both a link to the data and documentation
+        if not (docs_anchor and data_anchor):
+            return
 
-    def scrape_datasets(self) -> pd.DataFrame:
-        """ Scrapes all publicly available NHANES datasets. """
+        # Ensure we only scrape datasets with data in the XPT format
+        if not data_anchor.attrs['href'].strip().lower().endswith(".xpt"):
+            return
 
-        print("Scraping NHANES for available datasets...")
-        with ThreadPoolExecutor() as executor:
-            executor.map(self.scrape_component, config.COMPONENTS)
+        dataset = Dataset(years=td_list[0].text().strip(),
+                          component=component,
+                          description=td_list[1].text().strip(),
+                          docs_url=f"{base_url}{docs_anchor.attrs['href'].strip()}",
+                          data_url=f"{base_url}{data_anchor.attrs['href'].strip()}")
 
-        # Write the dataframe to a csv file for future use
-        self.datasets.to_csv("nhanes_datasets.csv", index=False)
-        print("Scraping complete!")
-
-        return self.datasets
+        self.datasets.append(dataset)
 
     def scrape_component(self, component: str) -> None:
-        """ Scrapes the available datasets for a given component. """
+        """ Scrape NHANES for a specific component. """
 
-        base = "https://wwwn.cdc.gov"
-        new_url = config.URL + component
-        response = requests.get(new_url, headers=config.HEADERS)
-        tree = HTMLParser(response.text)
-        selector = "table > tbody > tr"
+        print(f"Scraping NHANES for {component} datasets...")
 
-        datasets: list[Dataset] = []
-        for node in tree.css(selector):
-            if "limited_access" in node.html.lower():
-                continue
-            if "withdrawn" in node.html.lower():
-                continue
-            if node.css_first("td:nth-child(4) > a") is None:
-                continue
+        response = requests.get(f"{SCRAPER_BASE_URL}{component}")
+        parser = LexborHTMLParser(response.text)
+        for row in parser.css_first("table > tbody").css("tr"):
+            self.parse_row(row.css("td"), component)
 
-            years = node.css_first("td:nth-child(1)").text().strip()
-            description = node.css_first("td:nth-child(2)").text().strip()
-            docs_url = base + node.css_first("td:nth-child(3) > a") \
-                .attributes["href"].strip()
-            data_url = base + node.css_first("td:nth-child(4) > a") \
-                .attributes["href"].strip()
+    def scrape(self) -> pl.DataFrame:
+        """ Scrape NHANES datasets for each of the components. """
 
-            if not data_url.lower().endswith(".xpt"):
-                continue
+        with ThreadPoolExecutor() as executor:
+            executor.map(self.scrape_component, COMPONENTS)
 
-            dataset = Dataset(years, component, description, data_url, docs_url)
-            datasets.append(dataset)
+        print(f"Scraped {len(self.datasets)} datasets!")
+        return pl.DataFrame(self.datasets)
 
-        # Add these datasets to the dataframe
-        df = pd.DataFrame([dataset.__dict__ for dataset in datasets])
-        self.datasets = pd.concat([self.datasets, df], ignore_index=True)
+    def get_datasets(self, fresh: bool = False) -> pl.DataFrame:
+        """ Get NHANES datasets. If fresh is True, scrape the website. Otherwise, read from CSV if it exists. """
+
+        if os.path.isfile(DATASETS_CSV) and not fresh:
+            return pl.read_csv(DATASETS_CSV)
+
+        df = self.scrape()
+        df.write_csv(DATASETS_CSV)
+        return df
