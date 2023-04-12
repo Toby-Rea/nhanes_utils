@@ -1,11 +1,10 @@
 import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
-import pandas as pd
 import polars as pl
 
 from nhanes_utils.config import COMPONENTS, YEARS, DOWNLOAD_DIRECTORY
+from nhanes_utils.converter import Converter
 from nhanes_utils.downloader import Downloader
 from nhanes_utils.scraper import Scraper
 
@@ -18,8 +17,7 @@ def download_nhanes(components: Optional[list[str]] = None, years: Optional[list
     if years is None:
         years = YEARS
 
-    scraper = Scraper()
-    datasets = scraper.get_datasets()
+    datasets = get_available_datasets()
 
     for component in components:
         df = datasets.filter((pl.col("years").is_in(years)) & (pl.col("component") == component))
@@ -29,19 +27,6 @@ def download_nhanes(components: Optional[list[str]] = None, years: Optional[list
 
         downloader = Downloader(url_list, f"{DOWNLOAD_DIRECTORY}/{component.lower()}")
         downloader.run()
-
-
-def convert_xpt_to_csv(xpt_path: str) -> None:
-    """ Converts an XPT file to CSV, removing the original XPT file. """
-
-    print(f"Converting {xpt_path} to CSV ...")
-    df = pd.read_sas(xpt_path)
-
-    csv_path = os.path.splitext(xpt_path)[0] + ".csv"
-    df.to_csv(csv_path, index=False)
-
-    # Remove the original XPT file
-    os.remove(xpt_path)
 
 
 def convert_datasets() -> None:
@@ -58,10 +43,8 @@ def convert_datasets() -> None:
         print("Nothing to convert ...")
         return
 
-    print("Converting XPT files to CSV ...")
-    with ThreadPoolExecutor() as executor:
-        executor.map(convert_xpt_to_csv, xpt_files)
-    print("Conversion complete!")
+    converter = Converter(xpt_files)
+    converter.run()
 
 
 def get_available_datasets() -> pl.DataFrame:
