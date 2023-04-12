@@ -36,7 +36,7 @@ class Downloader:
         number of times before giving up. 
         """
 
-        file_name = os.path.basename(url)
+        file_name = os.path.basename(url).upper()
 
         if self.destination:
             file_name = os.path.join(self.destination, file_name)
