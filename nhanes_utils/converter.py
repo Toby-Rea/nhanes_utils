@@ -19,7 +19,7 @@ class Converter:
         print(f"Converting {xpt_path} to CSV ...")
         df = pd.read_sas(xpt_path)
 
-        csv_path = os.path.splitext(xpt_path)[0] + ".csv"
+        csv_path = os.path.splitext(xpt_path)[0] + ".CSV"
         df.to_csv(csv_path, index=False)
 
         # Remove the original XPT file
@@ -27,10 +27,6 @@ class Converter:
 
     async def convert(self) -> None:
         """ Converts all XPT files in the list of XPT files asynchronously. """
-
-        tasks = [self.convert_xpt_to_csv_async(xpt_file) for xpt_file in self.xpt_files]
-        await asyncio.gather(*tasks)
-        print("Conversion complete!")
 
         print("Converting XPT files to CSV ...")
         tasks = [self.convert_xpt_to_csv_async(xpt_file) for xpt_file in self.xpt_files]
