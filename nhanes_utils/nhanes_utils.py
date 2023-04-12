@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from typing import Optional
 
 import polars as pl
@@ -32,12 +32,7 @@ def download_nhanes(components: Optional[list[str]] = None, years: Optional[list
 def convert_datasets() -> None:
     """ Converts all XPT files in the data directory to CSV. """
 
-    # Store references to all XPT files in the data directory
-    xpt_files = []
-    for root, _, files in os.walk(DOWNLOAD_DIRECTORY):
-        for file in files:
-            if os.path.splitext(file)[1].lower() == ".xpt":
-                xpt_files.append(os.path.join(root, file))
+    xpt_files = [str(file) for file in Path(DOWNLOAD_DIRECTORY).rglob("*.XPT")]
 
     if not xpt_files:
         print("Nothing to convert ...")
