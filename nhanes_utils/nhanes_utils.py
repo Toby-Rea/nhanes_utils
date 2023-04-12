@@ -34,7 +34,7 @@ def download_nhanes(components: Optional[list[str]] = None, years: Optional[list
 def convert_xpt_to_csv(xpt_path: str) -> None:
     """ Converts an XPT file to CSV, removing the original XPT file. """
 
-    print(f"Converting {xpt_path} to CSV...")
+    print(f"Converting {xpt_path} to CSV ...")
     df = pd.read_sas(xpt_path)
 
     csv_path = os.path.splitext(xpt_path)[0] + ".csv"
@@ -47,18 +47,18 @@ def convert_xpt_to_csv(xpt_path: str) -> None:
 def convert_datasets() -> None:
     """ Converts all XPT files in the data directory to CSV. """
 
-    # Use os to get all xpt files in the data directory
+    # Store references to all XPT files in the data directory
     xpt_files = []
-    for dp, dn, filenames in os.walk(DOWNLOAD_DIRECTORY):
-        for f in filenames:
-            if os.path.splitext(f)[1].lower() == ".xpt":
-                xpt_files.append(os.path.join(dp, f))
+    for root, _, files in os.walk(DOWNLOAD_DIRECTORY):
+        for file in files:
+            if os.path.splitext(file)[1].lower() == ".xpt":
+                xpt_files.append(os.path.join(root, file))
 
     if not xpt_files:
-        print("Nothing to convert...")
+        print("Nothing to convert ...")
         return
 
-    print("Converting XPT files to CSV...")
+    print("Converting XPT files to CSV ...")
     with ThreadPoolExecutor() as executor:
         executor.map(convert_xpt_to_csv, xpt_files)
     print("Conversion complete!")

@@ -46,7 +46,7 @@ class Scraper:
     def scrape_component(self, component: str) -> None:
         """ Scrape NHANES for a specific component. """
 
-        print(f"Scraping NHANES for {component} datasets...")
+        print(f"Scraping NHANES for {component} datasets ...")
 
         response = requests.get(f"{SCRAPER_BASE_URL}{component}")
         parser = LexborHTMLParser(response.text)

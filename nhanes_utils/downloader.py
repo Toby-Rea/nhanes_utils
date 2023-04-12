@@ -69,7 +69,7 @@ class Downloader:
         urls_to_download = [url for url in self.urls if not self.file_exists(url)]
 
         if not urls_to_download:
-            print("There is nothing to download...")
+            print("There is nothing to download ...")
             return
 
         print(f"Downloading {len(urls_to_download)} files to {self.destination}...")
